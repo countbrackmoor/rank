@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rank</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Karla:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0c0b;
+      color: #eae4d4;
+      font-family: 'Karla', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 100px;
+    }
+
+    .card { width: 100%; max-width: 560px; }
+
+    /* ── Display heading ── */
+    .big {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: clamp(62px, 15vw, 96px);
+      line-height: 0.88;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      color: #eae4d4;
+      margin-bottom: 22px;
+    }
+    .big .hi { color: #c8f72a; }
+
+    .caption {
+      font-size: 14px;
+      color: #5a5248;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    /* ── Entry ── */
+    .ta {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      line-height: 2;
+      background: #181614;
+      border: 1px solid #252220;
+      color: #eae4d4;
+      resize: vertical;
+      outline: none;
+      border-radius: 0;
+      transition: border-color 0.2s;
+    }
+    .ta:focus { border-color: #c8f72a; }
+    .ta::placeholder { color: #302c28; }
+
+    .ta-hint {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #302c28;
+      letter-spacing: 0.05em;
+      margin: 8px 0 28px;
+    }
+
+    .btn-go {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 30px;
+      background: #c8f72a;
+      color: #0a0a07;
+      border: none;
+      border-radius: 0;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-go:hover { opacity: 0.85; }
+    .btn-go:active { transform: scale(0.98); }
+
+    /* ── Progress ── */
+    .prog { margin-bottom: 36px; }
+    .prog-track {
+      height: 1px;
+      background: #222;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .prog-fill {
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      background: #c8f72a;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+    .prog-meta {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #4a4238;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Compare ── */
+    .cmp-lbl {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #4a4238;
+      margin-bottom: 18px;
+    }
+
+    .choice-btn {
+      width: 100%;
+      padding: 26px 22px;
+      background: #181614;
+      border: 1px solid #252220;
+      color: #eae4d4;
+      font-family: 'Karla', sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      line-height: 1.35;
+      word-break: break-word;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.14s, background 0.14s;
+      border-radius: 0;
+    }
+    .choice-btn::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: #c8f72a;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.15s;
+    }
+    .choice-btn:hover::before { transform: scaleX(1); }
+    .choice-btn:hover { border-color: #c8f72a; background: #1c1a17; }
+    .choice-btn:active { background: #201e1a; }
+
+    .ch-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #3a3530;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: color 0.14s;
+    }
+    .choice-btn:hover .ch-tag { color: #c8f72a; }
+
+    /* Merge the two buttons visually around the "or" */
+    #choice-a { border-bottom: none; }
+    #choice-b { border-top: none; }
+    .or-sep {
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: #2e2a26;
+      padding: 10px;
+      background: #0d0c0b;
+      border-left: 1px solid #252220;
+      border-right: 1px solid #252220;
+    }
+
+    /* ── Standings ── */
+    .standings {
+      margin-top: 44px;
+      padding-top: 22px;
+      border-top: 1px solid #1a1816;
+    }
+    .st-hd {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .st-lbl {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #4a4238;
+    }
+    .st-note {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: #2e2a26;
+      letter-spacing: 0.04em;
+    }
+    .st-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #181614;
+    }
+    .st-rk {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #302c28;
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .st-rk.lead { color: #c8f72a; }
+    .st-nm {
+      font-size: 13px;
+      font-weight: 500;
+      color: #b0aa9e;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .st-bar-out {
+      width: 52px;
+      height: 2px;
+      background: #222;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .st-bar-in {
+      height: 100%;
+      background: #c8f72a;
+      opacity: 0.45;
+      transition: width 0.35s ease;
+    }
+    .st-bar-in.lead { opacity: 1; }
+    .st-w {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #302c28;
+      width: 20px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .st-w.active { color: #9a9488; }
+
+    /* ── Results ── */
+    .res-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 15px 0;
+      border-bottom: 1px solid #1a1816;
+      animation: fadeUp 0.4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .r-rk {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: #302c28;
+      width: 22px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .r-rk.first { color: #c8f72a; font-size: 15px; }
+    .r-nm {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 500;
+      color: #eae4d4;
+      line-height: 1.35;
+    }
+    .r-tie {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      border: 1px solid #252220;
+      color: #4a4238;
+      padding: 2px 5px;
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+    .r-wins {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: #3a3530;
+      flex-shrink: 0;
+    }
+
+    /* ── Action buttons ── */
+    .act-row { display: flex; gap: 10px; margin-top: 40px; flex-wrap: wrap; }
+    .btn-ghost {
+      padding: 11px 22px;
+      background: transparent;
+      border: 1px solid #222;
+      color: #4a4238;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: #eae4d4; color: #eae4d4; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       INSERT YOUR GORGON.LIVE NAV HERE
+       ============================================================ -->
+
+  <div class="wrap">
+    <div class="card">
+
+      <!-- ── PHASE 1: ENTRY ────────────────────────────────────── -->
+      <div id="phase-entry">
+        <div class="big">Make<br>your <span class="hi">list.</span></div>
+        <p class="caption">One item per line — tasks, movies, goals, projects. We'll rank them through head-to-head comparison until a clear order emerges.</p>
+        <textarea id="item-input" class="ta" placeholder="Item one&#10;Item two&#10;Item three&#10;Item four"></textarea>
+        <p class="ta-hint">one item per line · minimum 2</p>
+        <button class="btn-go" onclick="handleStart()">Rank them &#8594;</button>
+      </div>
+
+      <!-- ── PHASE 2: COMPARE ──────────────────────────────────── -->
+      <div id="phase-compare" style="display:none">
+        <div class="prog">
+          <div class="prog-track">
+            <div class="prog-fill" id="prog-fill"></div>
+          </div>
+          <div class="prog-meta">
+            <span id="prog-done"></span>
+            <span id="prog-remaining"></span>
+          </div>
+        </div>
+
+        <div class="cmp-lbl">Which matters more?</div>
+
+        <button class="choice-btn" id="choice-a" onclick="handleChoiceA()">
+          <span id="choice-a-text"></span>
+          <span class="ch-tag">pick &#8594;</span>
+        </button>
+        <div class="or-sep">&#8212; or &#8212;</div>
+        <button class="choice-btn" id="choice-b" onclick="handleChoiceB()">
+          <span id="choice-b-text"></span>
+          <span class="ch-tag">pick &#8594;</span>
+        </button>
+
+        <div class="standings">
+          <div class="st-hd">
+            <span class="st-lbl">Current standings</span>
+            <span class="st-note" id="st-note"></span>
+          </div>
+          <div id="standings-list"></div>
+        </div>
+      </div>
+
+      <!-- ── PHASE 3: RESULTS ──────────────────────────────────── -->
+      <div id="phase-results" style="display:none">
+        <div class="big">Final<br><span class="hi">rank.</span></div>
+        <div id="results-list"></div>
+        <div class="act-row">
+          <button class="btn-ghost" onclick="handleChange()">Edit list</button>
+          <button class="btn-ghost" onclick="handleReset()">Start over</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────
+    let items    = [];
+    let pairs    = [];
+    let scores   = [];
+    let pairIdx  = 0;
+    let currentA = 0;
+    let currentB = 0;
+
+    // ── Algorithm ──────────────────────────────────────────────────────────
+    // Generate every unique pair: n*(n-1)/2 total.
+    function generatePairs(n) {
+      const p = [];
+      for (let i = 0; i < n; i++)
+        for (let j = i + 1; j < n; j++)
+          p.push([i, j]);
+      return p;
+    }
+
+    // Sort items by current win count, assign ranks, compute bar %.
+    function computeStandings() {
+      const sorted = items
+        .map((item, i) => ({ item, score: scores[i] }))
+        .sort((a, b) => b.score - a.score);
+      const maxScore = sorted[0] ? sorted[0].score : 0;
+      let rank = 1;
+      return sorted.map(function(e, i) {
+        if (i > 0 && e.score < sorted[i - 1].score) rank = i + 1;
+        return {
+          item:  e.item,
+          score: e.score,
+          rank:  rank,
+          pct:   maxScore > 0 ? (e.score / maxScore) * 100 : 0
+        };
+      });
+    }
+
+    // Safe HTML escaping to prevent XSS from user input.
+    function esc(str) {
+      var d = document.createElement('div');
+      d.appendChild(document.createTextNode(str));
+      return d.innerHTML;
+    }
+
+    // ── Phase control ──────────────────────────────────────────────────────
+    function showPhase(phase) {
+      document.getElementById('phase-entry').style.display   = phase === 'entry'   ? 'block' : 'none';
+      document.getElementById('phase-compare').style.display = phase === 'compare' ? 'block' : 'none';
+      document.getElementById('phase-results').style.display = phase === 'results' ? 'block' : 'none';
+    }
+
+    // ── Entry ──────────────────────────────────────────────────────────────
+    function handleStart() {
+      var text  = document.getElementById('item-input').value;
+      var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+      if (lines.length < 2) return;
+      items   = lines;
+      pairs   = generatePairs(items.length);
+      scores  = new Array(items.length).fill(0);
+      pairIdx = 0;
+      showPhase('compare');
+      renderCompare();
+    }
+
+    // ── Compare ────────────────────────────────────────────────────────────
+    function renderCompare() {
+      var pair  = pairs[pairIdx];
+      currentA  = pair[0];
+      currentB  = pair[1];
+      var total = pairs.length;
+      var done  = pairIdx;
+      var pct   = (done / total) * 100;
+
+      document.getElementById('prog-fill').style.width    = pct + '%';
+      document.getElementById('prog-done').textContent    = done + ' / ' + total + ' comparisons';
+      document.getElementById('prog-remaining').textContent = (total - done) + ' remaining';
+      document.getElementById('choice-a-text').textContent = items[currentA];
+      document.getElementById('choice-b-text').textContent = items[currentB];
+
+      renderStandings();
+    }
+
+    function renderStandings() {
+      var total     = pairs.length;
+      var remaining = total - pairIdx;
+      document.getElementById('st-note').textContent = 'partial \u00B7 ' + remaining + ' left';
+
+      var container = document.getElementById('standings-list');
+      container.innerHTML = '';
+
+      computeStandings().forEach(function(e) {
+        var isLead = e.rank === 1 && e.score > 0;
+        var row    = document.createElement('div');
+        row.className = 'st-row';
+        row.innerHTML =
+          '<span class="st-rk' + (isLead ? ' lead' : '') + '">' + e.rank + '</span>' +
+          '<span class="st-nm">' + esc(e.item) + '</span>' +
+          '<div class="st-bar-out"><div class="st-bar-in' + (isLead ? ' lead' : '') + '" style="width:' + e.pct + '%"></div></div>' +
+          '<span class="st-w' + (e.score > 0 ? ' active' : '') + '">' + e.score + 'W</span>';
+        container.appendChild(row);
+      });
+    }
+
+    function handleChoiceA() { handleChoice(currentA); }
+    function handleChoiceB() { handleChoice(currentB); }
+
+    function handleChoice(winnerIdx) {
+      scores[winnerIdx]++;
+      var next = pairIdx + 1;
+      if (next >= pairs.length) {
+        showResults();
+      } else {
+        pairIdx = next;
+        renderCompare();
+      }
+    }
+
+    // ── Results ────────────────────────────────────────────────────────────
+    function showResults() {
+      var ranked = items
+        .map(function(item, i) { return { item: item, score: scores[i] }; })
+        .sort(function(a, b) { return b.score - a.score; });
+
+      var maxScore = ranked[0] ? ranked[0].score : 0;
+      var dispRank = 1;
+      var withRanks = ranked.map(function(e, i) {
+        if (i > 0 && e.score < ranked[i - 1].score) dispRank = i + 1;
+        return { item: e.item, score: e.score, rank: dispRank };
+      });
+
+      var container = document.getElementById('results-list');
+      container.innerHTML = '';
+
+      withRanks.forEach(function(e, i) {
+        var tied = i > 0 && e.score === withRanks[i - 1].score;
+        var row  = document.createElement('div');
+        row.className = 'res-row';
+        row.style.animationDelay = (i * 55) + 'ms';
+        row.innerHTML =
+          '<span class="r-rk' + (e.rank === 1 ? ' first' : '') + '">' + e.rank + '</span>' +
+          '<span class="r-nm">' + esc(e.item) + '</span>' +
+          (tied ? '<span class="r-tie">TIE</span>' : '') +
+          '<span class="r-wins">' + e.score + '/' + maxScore + 'W</span>';
+        container.appendChild(row);
+      });
+
+      showPhase('results');
+    }
+
+    // ── Reset / Edit ───────────────────────────────────────────────────────
+    function handleReset() {
+      items = []; pairs = []; scores = []; pairIdx = 0;
+      document.getElementById('item-input').value = '';
+      showPhase('entry');
+    }
+
+    function handleChange() {
+      document.getElementById('item-input').value = items.join('\n');
+      showPhase('entry');
+    }
+  </script>
+</body>
+</html>
