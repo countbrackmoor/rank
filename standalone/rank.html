@@ -549,7 +549,7 @@
     // ── Copy ───────────────────────────────────────────────────────────────
     function handleCopy() {
       var text = lastRankedResults
-        .map(function(e) { return e.rank + '\t' + e.item; })
+        .map(function(e) { return e.item; })
         .join('\n');
 
       navigator.clipboard.writeText(text).then(function() {
