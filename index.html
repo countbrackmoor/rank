@@ -328,6 +328,53 @@
       transition: border-color 0.15s, color 0.15s;
     }
     .btn-ghost:hover { border-color: #eae4d4; color: #eae4d4; }
+
+    /* ── Export options ── */
+    .export-opts {
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+    .export-opts label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: #5e5a54;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .export-opts label:hover { color: #8a847a; }
+    .export-opts input[type="checkbox"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border: 1px solid #353028;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .export-opts input[type="checkbox"]:checked {
+      background: #c8f72a;
+      border-color: #c8f72a;
+    }
+    .export-opts input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 0px;
+      width: 4px;
+      height: 8px;
+      border: 1.5px solid #0d0c0b;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
   </style>
 </head>
 <body>
@@ -341,8 +388,8 @@
 
       <!-- ── PHASE 1: ENTRY ────────────────────────────────────── -->
       <div id="phase-entry">
-        <div class="big">Time<br>to <span class="hi">rank.</span></div>
-        <p class="caption">One item per line — tasks, movies, goals, projects, where to get takeout tonight, your favorite animals, whatever. i don't even care. Rank them through head-to-head comparison until a clear order emerges. or don't. whatever.</p>
+        <div class="big">Make<br>your <span class="hi">list.</span></div>
+        <p class="caption">One item per line — tasks, movies, goals, projects. We'll rank them through head-to-head comparison until a clear order emerges.</p>
         <textarea id="item-input" class="ta" placeholder="Item one&#10;Item two&#10;Item three&#10;Item four"></textarea>
         <p class="ta-hint">one item per line · minimum 2</p>
         <button class="btn-go" onclick="handleStart()">Rank them &#8594;</button>
@@ -385,8 +432,15 @@
       <div id="phase-results" style="display:none">
         <div class="big">Final<br><span class="hi">rank.</span></div>
         <div id="results-list"></div>
+        <div class="export-opts">
+          <label>
+            <input type="checkbox" id="chk-metrics">
+            Include metrics
+          </label>
+        </div>
         <div class="act-row">
           <button class="btn-ghost" id="btn-copy" onclick="handleCopy()">Copy list</button>
+          <button class="btn-ghost" id="btn-csv"  onclick="handleExportCSV()">Export CSV</button>
           <button class="btn-ghost" onclick="handleChange()">Edit list</button>
           <button class="btn-ghost" onclick="handleReset()">Start over</button>
         </div>
@@ -546,23 +600,72 @@
       lastRankedResults = withRanks;
     }
 
+    // ── Export helpers ─────────────────────────────────────────────────────
+    function withMetrics() {
+      return document.getElementById('chk-metrics').checked;
+    }
+
+    function csvCell(val) {
+      var s = String(val);
+      if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1)
+        return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+
+    function flashBtn(id, label) {
+      var btn = document.getElementById(id);
+      btn.textContent      = label;
+      btn.style.borderColor = '#c8f72a';
+      btn.style.color       = '#c8f72a';
+      setTimeout(function() {
+        btn.textContent      = id === 'btn-copy' ? 'Copy list' : 'Export CSV';
+        btn.style.borderColor = '';
+        btn.style.color       = '';
+      }, 2000);
+    }
+
     // ── Copy ───────────────────────────────────────────────────────────────
     function handleCopy() {
-      var text = lastRankedResults
-        .map(function(e) { return e.item; })
-        .join('\n');
-
+      var text;
+      if (withMetrics()) {
+        text = lastRankedResults
+          .map(function(e) { return e.rank + '\t' + e.item + '\t' + e.score + 'W'; })
+          .join('\n');
+      } else {
+        text = lastRankedResults
+          .map(function(e) { return e.item; })
+          .join('\n');
+      }
       navigator.clipboard.writeText(text).then(function() {
-        var btn = document.getElementById('btn-copy');
-        btn.textContent = 'Copied ✓';
-        btn.style.borderColor = '#c8f72a';
-        btn.style.color       = '#c8f72a';
-        setTimeout(function() {
-          btn.textContent    = 'Copy list';
-          btn.style.borderColor = '';
-          btn.style.color       = '';
-        }, 2000);
+        flashBtn('btn-copy', 'Copied \u2713');
       });
+    }
+
+    // ── Export CSV ─────────────────────────────────────────────────────────
+    function handleExportCSV() {
+      var rows;
+      if (withMetrics()) {
+        rows = [['Rank', 'Item', 'Wins']].concat(
+          lastRankedResults.map(function(e) {
+            return [e.rank, csvCell(e.item), e.score];
+          })
+        );
+      } else {
+        rows = [['Item']].concat(
+          lastRankedResults.map(function(e) { return [csvCell(e.item)]; })
+        );
+      }
+      var csv  = rows.map(function(r) { return r.join(','); }).join('\n');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'rank-results.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      flashBtn('btn-csv', 'Exported \u2713');
     }
 
     // ── Reset / Edit ───────────────────────────────────────────────────────
